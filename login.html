@@ -13,7 +13,7 @@
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, collection, doc, getDoc, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
-    // NOVO: Importa a função de notificação
+    // Importa a função de notificação
     import { showNotification } from './utils/notifications.js';
 
     // Configuração do Firebase
@@ -31,10 +31,6 @@
     const db = getFirestore(app); 
 
     const loginBtn = document.getElementById("login-btn");
-
-    // =========================================
-    // Função local showNotification REMOVIDA
-    // =========================================
 
     function login() {
       const email = document.getElementById("email").value;
@@ -121,7 +117,6 @@
 
     function selectInstitution(instId) {
       if (!instId) {
-          // Usa a função importada
           showNotification("Por favor, selecione uma instituição.", 'info');
           return;
       }
@@ -183,4 +178,5 @@
   </div>
 
 </body>
+
 </html>
