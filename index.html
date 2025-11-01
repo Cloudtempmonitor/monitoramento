@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento de Temperatura</title>
+    
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, where, orderBy, startAt, Timestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        window.firebaseApp = initializeApp;
+        window.firebaseAuth = getAuth;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseFirestore = getFirestore;
+        window.firebaseCollection = collection;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseStartAt = startAt;
+        window.firebaseTimestamp = Timestamp;
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+
+<div id="menu">
+    <button id="menu-toggle">☰</button>
+    <div id="user-info">
+        <h3 id="user-name"></h3>
+    </div>
+    
+    <div id="filters"></div> 
+    <a id="logout-button" class="logout-button">Sair (Logout)</a>
+    <a href="admin.html" class="config-button">Configurações</a>
+</div>
+
+<div id="content">
+    <center><h1>Monitoramento de Temperatura</h1></center>
+    <div id="chartContainer"></div>
+</div>
+
+<div id="datalogger-modal">
+    <h2 id="modal-device-name" style="text-align: center;"></h2>
+    <button class="modal-close" onclick="closeDatalogger()">X</button>
+    
+    <div style="text-align: center; margin-top:10px; margin-bottom: 10px;">
+        <label>Período Rápido: </label>
+        <select id="time-filter" onchange="updateChartData()">
+            <option value="12">12 horas</option>
+            <option value="24">24 horas</option>
+            <option value="72">3 dias</option>
+            <option value="168">7 dias</option>
+        </select>
+        
+        <!--Botão Mais Detalhes -->
+        <button id="more-details-btn" style="margin-left: 15px; padding: 8px 15px; background: var(--cor-destaque-azul); color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Mais Detalhes
+        </button>
+    </div>
+    
+    <div style="width: 100%; height: 400px;">
+        <canvas id="device-chart"></canvas>
+    </div>
+</div>
+
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>

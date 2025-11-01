@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  
+  <link rel="stylesheet" href="estilo.css">
+
+  <script type="module">
+    // Importações do Firebase Auth e Firestore
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    
+    // NOVO: Importa a função de notificação
+    import { showNotification } from './utils/notifications.js';
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAawMA2HjEgBZ5gYIawMYECTp0oN4hj6YE",
+      authDomain: "temptracker-eb582.firebaseapp.com",
+      projectId: "temptracker-eb582",
+      storageBucket: "temptracker-eb582.firebasestorage.app",
+      messagingSenderId: "1079337208340",
+      appId: "1:1079337208340:web:0b86faa43e141f0ff1b501"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app); 
+
+    const loginBtn = document.getElementById("login-btn");
+
+    // =========================================
+    // Função local showNotification REMOVIDA
+    // =========================================
+
+    function login() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+
+      loginBtn.textContent = "Entrando...";
+      loginBtn.disabled = true;
+
+      signInWithEmailAndPassword(auth, email, senha)
+        .then((userCredential) => {
+          handleLoginSuccess(userCredential.user);
+        })
+        .catch((error) => {
+          console.error("Erro no login:", error.message);
+          // Usa a função importada
+          showNotification("Email ou senha incorretos.", 'error', 'Falha no Login', 3000); 
+          loginBtn.disabled = false;
+        });
+    }
+
+    async function handleLoginSuccess(user) {
+      try {
+        const userDocRef = doc(db, "usuarios", user.uid);
+        const userSnapshot = await getDoc(userDocRef);
+
+        if (!userSnapshot.exists()) {
+          throw new Error("Documento de usuário não encontrado no Firestore.");
+        }
+
+        const userData = userSnapshot.data();
+        const userLevel = userData.nivel || "user";
+        const allowedInstIds = userData.acessoInstituicoes || [];
+
+        fetchInstitutions(userLevel, allowedInstIds);
+
+      } catch (error) {
+        console.error("Erro ao buscar dados do usuário:", error);
+        // Usa a função importada
+        showNotification(error.message, 'error');
+        loginBtn.textContent = "Entrar";
+        loginBtn.disabled = false;
+      }
+    }
+
+    async function fetchInstitutions(userLevel, allowedIds) {
+      let institutionsList = [];
+      try {
+        let instQuery;
+        if (userLevel === 'superAdmin') {
+          instQuery = query(collection(db, "instituicoes"));
+        } else {
+          if (allowedIds.length === 0) {
+            throw new Error("Nenhuma instituição associada a este usuário.");
+          }
+          instQuery = query(collection(db, "instituicoes"), where(documentId(), "in", allowedIds.slice(0, 30)));
+        }
+        
+        const snapshot = await getDocs(instQuery);
+        snapshot.docs.forEach(doc => {
+          institutionsList.push({
+            id: doc.id,
+            name: doc.data().nome || doc.data().nomeInstituicao || "Instituição Sem Nome"
+          });
+        });
+
+        if (institutionsList.length === 0) {
+          throw new Error("Nenhuma instituição encontrada.");
+        }
+
+        if (institutionsList.length === 1) {
+          selectInstitution(institutionsList[0].id);
+        } else {
+          showInstitutionModal(institutionsList);
+        }
+
+      } catch (error) {
+        console.error("Erro ao buscar instituições:", error);
+        // Usa a função importada
+        showNotification(error.message, 'error');
+        loginBtn.textContent = "Entrar";
+        loginBtn.disabled = false;
+      }
+    }
+
+    function selectInstitution(instId) {
+      if (!instId) {
+          // Usa a função importada
+          showNotification("Por favor, selecione uma instituição.", 'info');
+          return;
+      }
+      localStorage.setItem('selectedInstitutionId', instId);
+      window.location.href = "index.html";
+    }
+
+    function showInstitutionModal(institutionsList) {
+      const modal = document.getElementById("institution-modal");
+      const listContainer = document.getElementById("institution-list");
+      listContainer.innerHTML = ""; 
+
+      institutionsList.forEach(inst => {
+        const option = document.createElement("option");
+        option.value = inst.id;
+        option.textContent = inst.name;
+        listContainer.appendChild(option);
+      });
+
+      modal.style.display = "block";
+      document.querySelector(".modal-overlay").style.display = "block";
+    }
+
+    // --- Event Listeners ---
+    loginBtn.onclick = login;
+    document.getElementById("senha").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        login();
+      }
+    });
+    document.getElementById("modal-confirm-btn").onclick = () => {
+        const select = document.getElementById("institution-list");
+        const selectedId = select.value;
+        selectInstitution(selectedId);
+    };
+    
+    // Adiciona a classe ao body para o CSS funcionar
+    document.body.classList.add('login-body');
+
+  </script>
+
+  </head>
+<body>
+
+  <div class="login-title">Gerenciador de Temperaturas</div>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="senha" placeholder="Senha" required />
+    <button class="btn login-btn" id="login-btn">Entrar</button>
+  </div>
+
+  <div class="modal-overlay"></div>
+  <div id="institution-modal">
+    <h3>Selecione a Instituição</h3>
+    <select id="institution-list"></select>
+    <button class="btn login-btn" id="modal-confirm-btn" style="margin-top: 10px;">Confirmar</button>
+  </div>
+
+</body>
+</html>
