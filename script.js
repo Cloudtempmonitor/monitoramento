@@ -30,7 +30,7 @@ const deviceListeners = {};
 const alarmListeners = {};
 const lastValidReadings = {};
 const deviceStatus = {};
-const deviceAlarmStatus = {}; // MODIFICADO: Irá armazenar o objeto de alarme completo
+const deviceAlarmStatus = {}; 
 const activeAlarms = new Set(); 
 
 const OFFLINE_THRESHOLD_SECONDS = 120; 
@@ -47,10 +47,10 @@ onAuthStateChanged(auth, (user) => {
     if (!user) {
         cleanupBeforeUnload();
         window.location.href = "login.html";
-        console.warn("Usuário não autenticado. Redirecionando para login.");  // Log melhorado
+        console.warn("Usuário não autenticado. Redirecionando para login."); 
     } else {
-        console.log(`Usuário autenticado com sucesso: UID ${user.uid}`);  // Log melhorado
-        showNotification("Login realizado com sucesso!", 'success', 'Bem-vindo', 3000);  // Nova: Notificação de sucesso
+        console.log(`Usuário autenticado com sucesso: UID ${user.uid}`);  
+        showNotification("Login realizado com sucesso!", 'success', 'Bem-vindo', 3000);  
         loadUserData(user.uid); 
         if (statusCheckInterval) clearInterval(statusCheckInterval);
         statusCheckInterval = setInterval(checkAllDeviceStatus, 30000); 
@@ -390,12 +390,12 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
        const alarmStatusRef = doc(db, "dispositivos", mac, "eventos", "estadoAlarmeAtual");
         alarmListeners[mac] = onSnapshot(alarmStatusRef, (docSnap) => {
             
-            // ########## ESTA É A LINHA CORRIGIDA ##########
+            
             // Lendo o campo 'estadoAlarmeAtual' DENTRO do documento 'estadoAlarmeAtual'
             const alarmData = (docSnap.exists() && docSnap.data().estadoAlarmeAtual) 
                 ? docSnap.data().estadoAlarmeAtual 
                 : { ativo: false, tipo: "Nenhum" };
-            // ###############################################
+            
             
             deviceAlarmStatus[mac] = alarmData; // Armazena o objeto de alarme completo
             
@@ -410,7 +410,7 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
                     // Verifica se o alarme é para um sensor habilitado pelo usuário
                     if (deviceConfig && hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData)) {
                         activeAlarms.add(mac);
-                        // NOVA MENSAGEM: Usa a função auxiliar para detalhar o alarme
+                        //Usa a função auxiliar para detalhar o alarme
                         const friendlyMessage = getFriendlyAlarmMessage(alarmData.tipo);
                         showNotification(
                             `Dispositivo "${deviceConfig.nomeDispositivo}" em alarme! (${friendlyMessage})`, 
@@ -444,7 +444,7 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
 }
 
 /**
- * NOVO: Converte o tipo de alarme em uma mensagem legível
+ *Converte o tipo de alarme em uma mensagem legível
  */
 function getFriendlyAlarmMessage(tipo) {
     if (!tipo) return "Tipo desconhecido";
@@ -464,7 +464,6 @@ function getFriendlyAlarmMessage(tipo) {
 
 /**
  * Verifica se o alarme ativo tem sensores habilitados
- * (Esta função permanece relevante para evitar notificações de sensores desabilitados)
  */
 function hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData) {
     if (!deviceConfig || !alarmData) return false;
@@ -497,7 +496,6 @@ function hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData) {
             
         default:
             // Para tipos desconhecidos ou múltiplos, considera ativo se algum sensor habilitado está em alarme
-            // (Assumindo que 'tipo' pode ser algo como 'multiplo' no futuro)
             return alarmeSondaAtivo || alarmeTempAmbienteAtivo || alarmeUmidadeAtivo || alarmeFalhaSondaAtivo;
     }
 }
@@ -542,19 +540,18 @@ function checkAllDeviceStatus() {
 }
 
 /**
- * Atualiza o conteúdo do card (MODIFICADO para nova lógica de alarme)
+ * Atualiza o conteúdo do card
  */
 function updateCardContent(cardElement, mac) {
     const deviceConfig = allDevicesConfig[mac];
     const currentReading = deviceConfig.ultimasLeituras;
     const status = deviceStatus[mac] || 'OFFLINE'; 
     
-    // MODIFICADO: Obtém o estado de alarme do listener
+    //Obtém o estado de alarme do listener
     const alarmState = deviceAlarmStatus[mac] || { ativo: false, tipo: 'Nenhum' };
     const isAlarm = alarmState.ativo === true;
 
-    // MODIFICADO: Adiciona/Remove a classe 'in-alarm' para o fundo do card
-    // Isso deve ser feito ANTES do innerHTML para garantir que o elemento exista
+    //Adiciona/Remove a classe 'in-alarm' para o fundo do card
     if (cardElement) {
         cardElement.classList.toggle('in-alarm', isAlarm);
     }
@@ -565,7 +562,6 @@ function updateCardContent(cardElement, mac) {
     let ambientTempValue = "N/A";
     let humidityValue = "N/A";
     let timestampText = "Sem dados";
-    // MODIFICADO: Cor principal agora é sempre padrão, não mais vermelha em alarme
     let mainColor = "#000000"; 
     let alarmeMinDisplay = 'N/A';
     let alarmeMaxDisplay = 'N/A';
@@ -589,15 +585,14 @@ function updateCardContent(cardElement, mac) {
             alarmeMaxDisplay = maxAlarm !== undefined ? `${maxAlarm}°C` : 'N/A';
 
             if (tempSonda !== undefined) {
-                // MODIFICADO: Lógica de 'isAlarm = true' removida daqui
-                if (tempSonda <= -100) { // Falha (-100, -127, etc.)
+                if (tempSonda <= -100) { 
                     mainValue = "N/A";
                 } 
                 else { // Leitura normal ou em alarme (apenas exibe o valor)
                     mainValue = `${tempSonda.toFixed(1)}°C`;
                 }
             }
-            // (tempSonda === undefined) -> mainValue continua "N/A"
+       
             
        } else {
             // MODO AMBIENTE
@@ -609,7 +604,6 @@ function updateCardContent(cardElement, mac) {
             alarmeMaxDisplay = maxAlarmAmb !== undefined ? `${maxAlarmAmb}°C` : 'N/A';
 
             if (tempAmb !== undefined) {
-                // MODIFICADO: Lógica de 'isAlarm = true' removida daqui
                 if (tempAmb <= -100) {
                     mainValue = "N/A";
                 }
@@ -623,7 +617,6 @@ function updateCardContent(cardElement, mac) {
             const maxAlarmUmid = deviceConfig.alarmeMax?.umidade;
 
             if (umidade !== undefined) {
-                // MODIFICADO: Lógica de 'isAlarm = true' removida daqui
                 if (umidade < 0) { // Falha (ESP32 envia -1.0)
                     humidityValue = "N/A";
                 }
@@ -633,29 +626,13 @@ function updateCardContent(cardElement, mac) {
             }
         }
 
-        // MODIFICADO: 'mainColor' não é mais condicional ao alarme
-        // mainColor = isAlarm ? "#e74c3c" : "#000000"; // LINHA REMOVIDA
-
         const timestamp = currentReading.timestamp;
         if (timestamp && typeof timestamp.toDate === 'function') {
             const date = timestamp.toDate(); 
             timestampText = `Última leitura: ${date.toLocaleString("pt-BR")}`;
         }
-
-        // MODIFICADO: Bloco de notificação redundante REMOVIDO
-        /* if (isAlarm) {
-            if (!activeAlarms.has(mac)) {
-                activeAlarms.add(mac);
-                showNotification(`O dispositivo "${deviceConfig.nomeDispositivo}" está fora dos limites!`, 'error', 'Alerta de Alarme');
-            }
-        } else {
-            activeAlarms.delete(mac);
-        }
-        */
-
     } else {
         mainColor = "#95a5a6"; // Cor cinza para offline
-        // activeAlarms.delete(mac); // Já é tratado pelo listener de alarme
         if (currentReading && currentReading.timestamp && typeof currentReading.timestamp.toDate === 'function') {
              const date = currentReading.timestamp.toDate(); 
              timestampText = `Última leitura: ${date.toLocaleString("pt-BR")}`;
@@ -665,7 +642,7 @@ function updateCardContent(cardElement, mac) {
     const setorDisplay = deviceConfig.nomeSetor || 'N/A';
     const nomeDispositivoDisplay = deviceConfig.nomeDispositivo || 'Dispositivo Desconhecido';
 
-    // NOVO: HTML diferenciado para modo sonda vs ambiente
+    //HTML diferenciado para modo sonda vs ambiente
     const additionalDataHTML = isSondaAtiva 
         ? `
             <div class="additional-data">
@@ -709,11 +686,7 @@ function updateCardContent(cardElement, mac) {
 
 
 /**
- * Funções de Alerta (Toast) REMOVIDAS
- */
-
-/**
- * Abre o modal do Datalogger (atualizado com botão de detalhes)
+ * Abre o modal do Datalogger 
  */
 function openDatalogger(mac, deviceName) {
     currentDeviceMac = mac;
@@ -967,7 +940,7 @@ function detachAllFirebaseListeners() {
     for (const mac in deviceListeners) {
         delete deviceListeners[mac];
     }
-    // MODIFICADO: Garante que os listeners de alarme também sejam limpos
+    //Garante que os listeners de alarme também sejam limpos
     for (const mac in alarmListeners) {
         if (alarmListeners[mac]) {
             alarmListeners[mac]();
@@ -985,7 +958,7 @@ window.addEventListener('beforeunload', cleanupBeforeUnload);
 
 
 /**
- * Modal de confirmação personalizado (substitui window.confirm)
+ * Modal de confirmação personalizado 
  */
 function showCustomConfirm(title, message, onConfirm) {
     // Remove modal antigo se existir
@@ -1033,4 +1006,5 @@ function showCustomConfirm(title, message, onConfirm) {
         }
     };
     document.addEventListener('keydown', escHandler);
+
 }
