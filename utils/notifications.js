@@ -1,6 +1,6 @@
-/**
- * MÓDULO DE NOTIFICAÇÕES GLOBAIS (Toasts + Fila + Acessibilidade)
- */
+// =========================================
+// NOTIFICATIONS.JS 
+// =========================================
 
 const notificationQueue = [];
 let isShowingNotification = false;
@@ -127,4 +127,61 @@ function closeToast(toast) {
         isShowingNotification = false;
         processQueue(); // Próxima notificação
     });
+}
+
+export function showConfirmation(message, title = "Confirmar Ação") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "notification-confirm-overlay";
+    overlay.innerHTML = `
+      <div class="notification-confirm-box" role="alertdialog" aria-modal="true">
+        <div class="notification-header">
+          <span class="notification-icon">⚠️</span>
+          <h4 class="notification-title">${title}</h4>
+        </div>
+        <p class="notification-message">${message}</p>
+        <div class="notification-confirm-actions">
+          <button class="notification-btn-confirm">Confirmar</button>
+          <button class="notification-btn-cancel">Cancelar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // animação de entrada
+    requestAnimationFrame(() => {
+      const box = overlay.querySelector(".notification-confirm-box");
+      box.style.opacity = "0";
+      box.style.transform = "translateY(-10px)";
+      box.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      requestAnimationFrame(() => {
+        box.style.opacity = "1";
+        box.style.transform = "translateY(0)";
+      });
+    });
+
+    const cleanup = (value) => {
+      overlay.style.opacity = "0";
+      overlay.addEventListener("transitionend", () => {
+        overlay.remove();
+      });
+      resolve(value);
+    };
+
+    overlay.querySelector(".notification-btn-confirm").addEventListener("click", () => cleanup(true));
+    overlay.querySelector(".notification-btn-cancel").addEventListener("click", () => cleanup(false));
+
+    // Fecha com tecla ESC
+    document.addEventListener(
+      "keydown",
+      function escHandler(e) {
+        if (e.key === "Escape") {
+          cleanup(false);
+          document.removeEventListener("keydown", escHandler);
+        }
+      },
+      { once: true }
+    );
+  });
 }
