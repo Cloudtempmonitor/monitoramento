@@ -7,7 +7,7 @@ import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebase
 import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 
-import { showNotification, showConfirmation } from './utils/notifications.js';
+import { showNotification, showConfirmation } from '/utils/notifications.js';
 
 // --- Variáveis de Dependência (preenchidas pelo init) ---
 let db, auth, currentUserLevel, currentUserInstitutions, hierarchyCache;
@@ -633,4 +633,5 @@ async function deleteUserFirestore(userId, email) {
         showNotification(`Erro ao excluir: ${error.message}`, 'error');
     }
 }
+
 
