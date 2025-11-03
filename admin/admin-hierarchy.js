@@ -1,31 +1,30 @@
-// Importações do Firebase (APENAS o que este módulo precisa)
+// =========================================
+// ADMIN-HIERARCHY.JS 
+// =========================================
+
+// Importações do Firebase 
 import { collection, doc, setDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-// --- Variáveis de Dependência (preenchidas pelo init) ---
+import { showNotification } from '../utils/notifications.js';
+
 let db, currentUserLevel, currentUserInstitutions, hierarchyCache, loadHierarchyCache;
 
-// --- Estado da UI ---
 let currentSelectedInstId = null;
 let currentSelectedUnitId = null;
 
-// --- Elementos da DOM ---
+
 const contentArea = document.getElementById('admin-content-area');
 const adminTitle = document.getElementById('admin-title');
 
-/**
- * Recebe as dependências do admin.js principal
- */
 export function initHierarchyModule(dependencies) {
     db = dependencies.db;
     currentUserLevel = dependencies.currentUserLevel;
     currentUserInstitutions = dependencies.currentUserInstitutions;
     hierarchyCache = dependencies.hierarchyCache;
-    loadHierarchyCache = dependencies.loadHierarchyCache; // Função para recarregar
+    loadHierarchyCache = dependencies.loadHierarchyCache; 
 }
 
-/**
- * Função principal da view (EXPORTADA)
- */
+
 export async function showInstituicoesView() {
     adminTitle.textContent = "Gerenciar Hierarquia";
     currentSelectedInstId = null;
@@ -65,9 +64,6 @@ export async function showInstituicoesView() {
     renderInstituicoes();
 }
 
-/**
- * Funções auxiliares (NÃO EXPORTADAS)
- */
 function renderInstituicoes() {
     const list = document.getElementById('inst-list');
     list.innerHTML = '';
@@ -238,7 +234,7 @@ async function saveHierarchyDoc(type, docId) {
     const isNew = !docId;
     const nome = document.getElementById('nome').value;
     if (!nome) {
-        alert("O nome é obrigatório.");
+        showNotification("O nome é obrigatório.", 'error', 'Erro');
         return;
     }
     
@@ -262,13 +258,13 @@ async function saveHierarchyDoc(type, docId) {
             ref = doc(collection(db, collectionName));
             if (type === 'unidade') {
                 if (!currentSelectedInstId) {
-                    alert("Erro: Nenhuma instituição selecionada.");
+                    showNotification("Erro: Nenhuma instituição selecionada.", 'error', 'Erro');
                     return;
                 }
                 data.instituicaoId = currentSelectedInstId;
             } else if (type === 'setor') {
                 if (!currentSelectedInstId || !currentSelectedUnitId) {
-                    alert("Erro: Nenhuma instituição ou unidade selecionada.");
+                    showNotification("Erro: Nenhuma instituição ou unidade selecionada.", 'error', 'Erro');
                     return;
                 }
                 data.instituicaoId = currentSelectedInstId;
@@ -289,22 +285,21 @@ async function saveHierarchyDoc(type, docId) {
             await updateDoc(ref, data);
         }
 
-        alert(`${type} salvo com sucesso!`);
+        showNotification(`${type} salvo com sucesso!`, 'success', 'Sucesso');
         document.body.removeChild(document.querySelector('.admin-modal-overlay'));
-        
-        // Recarrega o cache e a view
+                
         await loadHierarchyCache();
-        showInstituicoesView(); // Redesenha a tela de hierarquia
-        
+        showInstituicoesView(); 
+
     } catch (error) {
         console.error(`Erro ao salvar ${type}:`, error);
-        alert(`Erro ao salvar: ${error.message}`);
+        showNotification(`Erro ao salvar: ${error.message}`, 'error', 'Erro');
     }
 }
 
 async function deleteHierarchyDoc(type, docId) {
     if (currentUserLevel !== 'superAdmin') {
-        alert("Acesso negado.");
+        showNotification("Acesso negado.", 'error', 'Erro');
         return;
     }
 
@@ -320,22 +315,22 @@ async function deleteHierarchyDoc(type, docId) {
         return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir este ${type}? AVISO: Isso NÃO excluirá itens filhos (unidades, setores, dispositivos) automaticamente.`)) {
+    const confirmed = await showConfirmation(`Tem certeza que deseja excluir este ${type}? AVISO: Isso NÃO excluirá itens filhos (unidades, setores, dispositivos) automaticamente.`, 'Confirmar Exclusão');
+    if (!confirmed) {
         return;
     }
     
     try {
         await deleteDoc(doc(db, collectionName, docId));
-        alert(`${type} excluído com sucesso.`);
+        showNotification(`${type} excluído com sucesso.`, 'success', 'Sucesso');
         
         document.body.removeChild(document.querySelector('.admin-modal-overlay'));
         
-        // Recarrega o cache e a view
         await loadHierarchyCache();
-        showInstituicoesView(); // Redesenha a tela de hierarquia
+        showInstituicoesView(); 
 
     } catch (error) {
         console.error(`Erro ao excluir ${type}:`, error);
-        alert(`Erro ao excluir: ${error.message}`);
+        showNotification(`Erro ao excluir: ${error.message}`, 'error', 'Erro');
     }
 }
