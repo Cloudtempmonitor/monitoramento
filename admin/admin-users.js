@@ -1,11 +1,18 @@
+// =========================================
+// ADMIN-USERS.JS 
+// =========================================
+
 // Importações do Firebase
 import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
+
+import { showNotification, showConfirmation } from '../utils/notifications.js';
+
 // --- Variáveis de Dependência (preenchidas pelo init) ---
 let db, auth, currentUserLevel, currentUserInstitutions, hierarchyCache;
 let loggedInUserId; 
-let showNotification; // <-- Recebe a função de notificação
+
 
 // --- Elementos da DOM ---
 const contentArea = document.getElementById('admin-content-area');
@@ -21,12 +28,10 @@ export function initUsersModule(dependencies) {
     currentUserInstitutions = dependencies.currentUserInstitutions;
     hierarchyCache = dependencies.hierarchyCache;
     loggedInUserId = dependencies.currentUserId; 
-    showNotification = dependencies.showNotification; // <-- Armazena a função
 }
 
 /**
  * Função principal da view (EXPORTADA)
- * (Substitui 'alert' por 'showNotification')
  */
 export async function showUsuariosView() {
     adminTitle.textContent = "Gerenciar Usuários";
@@ -85,24 +90,29 @@ export async function showUsuariosView() {
     });
     
     if (currentUserLevel === 'superAdmin') {
-        document.querySelectorAll('.admin-button-delete').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const id = e.target.dataset.id;
-                const email = e.target.dataset.email;
-                // Substitui confirm() por um modal (embora confirm() seja um caso especial)
-                // Para manter simples, deixamos o confirm() por enquanto, ou usamos o showNotification
-                if (confirm(`Tem certeza que deseja excluir o usuário ${email}? (O login no Auth não será excluído automaticamente).`)) {
-                    await deleteUserFirestore(id, email);
-                }
-            });
-        });
-    }
+  document.querySelectorAll('.admin-button-delete').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      const email = e.target.dataset.email;
+
+      const confirmed = await showConfirmation(
+        `Tem certeza que deseja excluir o usuário <b>${email}</b>?<br><small>(O login no Auth não será excluído automaticamente.)</small>`,
+        "Excluir Usuário"
+      );
+
+      if (confirmed) {
+        await deleteUserFirestore(id, email);
+      }
+    });
+  });
+}
+
 }
 
 
 /**
  * ========================================
- * MODAL DE USUÁRIOS (Lógica MODIFICADA)
+ * MODAL DE USUÁRIOS 
  * ========================================
  */
 
@@ -114,7 +124,6 @@ let selectedDispositivo = new Set();
 
 /**
  * Abre o Modal para CRIAR ou EDITAR um Usuário.
- * (MODIFICADA para Senha e Lógica de Hierarquia)
  */
 async function openUserModal(userId) {
     let user = {}; 
@@ -168,7 +177,6 @@ async function openUserModal(userId) {
     
     let passwordHtml = '';
     if (isNewUser) {
-        // Novo usuário: Removemos os botões e wrappers
         passwordHtml = `
             <div class="form-group">
                 <label for="senha" title="${passwordRules}">Senha</label>
@@ -180,7 +188,6 @@ async function openUserModal(userId) {
             </div>
         `;
     } else if (canEditPassword) {
-        // Edição: Removemos os botões e wrappers
         passwordHtml = `
             <hr>
             <h4>Redefinir Senha (Opcional)</h4>
@@ -257,14 +264,9 @@ async function openUserModal(userId) {
             </div>
         </form>
     `;
-    // ==============================================================
-    // === FIM DA MODIFICAÇÃO (HTML) ===
-    // ==============================================================
     
     modalOverlay.appendChild(modalContent);
     document.body.appendChild(modalOverlay);
-    
-    // --- Lógica de Exibir/Ocultar Senha (REMOVIDA) ---
 
     // --- Lógica da Árvore de Acesso ---
     renderAccessInstituicoes(); 
@@ -282,7 +284,7 @@ async function openUserModal(userId) {
 
 /**
  * ========================================
- * LÓGICA DA ÁRVORE DE ACESSO (Sem alterações)
+ * LÓGICA DA ÁRVORE DE ACESSO
  * ========================================
  */
 function renderAccessInstituicoes() {
@@ -486,7 +488,7 @@ function getPermittedHierarchy() {
  */
 
 /**
- * NOVO: Validador de Senha
+ *Validador de Senha
  */
 function validatePassword(password) {
     const errors = [];
@@ -517,8 +519,7 @@ function validatePassword(password) {
 }
 
 /**
- * Salva o usuário (novo ou existente).
- * (MODIFICADA para validar senhas de criação E edição)
+ * Salva o usuário
  */
 async function saveUser(userId, selectedInstSet, selectedUnitSet, selectedSetorSet, selectedDispositivoSet) {
     const isNew = !userId;
@@ -591,7 +592,7 @@ async function saveUser(userId, selectedInstSet, selectedUnitSet, selectedSetorS
                 }
                 
                 showNotification("AVISO: A redefinição de senha de um usuário existente (Firebase Auth) requer uma Cloud Function (backend) por motivos de segurança. Os dados do usuário (Nome, Nível, Acessos) foram salvos, mas a senha NÃO foi alterada no sistema de login.", 'info', 'Aviso de Segurança');
-                // Se você tivesse uma Cloud Function, você a chamaria aqui.
+                // Futuramente chamar Cloud Function aqui
             }
             
             const docRef = doc(db, "usuarios", finalUserId);
@@ -603,7 +604,6 @@ async function saveUser(userId, selectedInstSet, selectedUnitSet, selectedSetorS
         showUsuariosView(); 
         
     } catch (error) {
-        // Trata erros comuns do Auth
         if (error.code === "auth/email-already-in-use") {
              showNotification("O email fornecido já está em uso por outra conta.", 'error');
         } else if (error.code === "auth/weak-password") {
