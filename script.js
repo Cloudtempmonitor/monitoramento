@@ -89,23 +89,34 @@ async function loadUserData(userId) {
 if (logoutButton) {
     logoutButton.style.display = 'block';
 
-    logoutButton.addEventListener("click", (e) => {
-        e.preventDefault();
+   // Botão de logout
+document.getElementById('logout-button').addEventListener('click', async () => {
+    const confirmed = await showConfirmation(
+        "Você será desconectado agora.",
+        "Sair da conta?"
+    );
 
-        showConfirmation(
-            "Sair da conta?",
-            "Você será desconectado agora.",
-            () => {
-                cleanupBeforeUnload();
-                signOut(auth).then(() => {
-                    window.location.href = "login.html";
-                }).catch((error) => {
-                    console.error("Erro ao fazer logout:", error);
-                    showNotification("Falha ao sair. Tente novamente.", "error", "Erro de Logout", 0);
-                });
-            }
-        );
-    });
+    if (confirmed) {
+        // Usuário clicou em "Confirmar"
+        cleanupBeforeUnload();
+        localStorage.removeItem('selectedInstitutionId'); // opcional
+
+        try {
+            await signOut(auth); 
+
+            window.location.href = "login.html";
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+            showNotification(
+                "Falha ao sair. Tente novamente.",
+                "error",
+                "Erro de Logout",
+                0
+            );
+        }
+    }
+    // Se clicou em "Cancelar", nada acontece
+});
 } else {
     console.warn("Elemento #logout-button não encontrado.");
 }
@@ -273,15 +284,32 @@ function renderFilterMenu(uiTree) {
             </div>
         `;
         
-       instContainer.querySelector('.change-inst-icon').addEventListener('click', () => {
-    showConfirmation(
-        "Trocar de instituição?",
+ instContainer.querySelector('.change-inst-icon').addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const confirmed = await showConfirmation(
         "Você será redirecionado para a tela de login.",
-        () => {
-            localStorage.removeItem('selectedInstitutionId');
-            auth.signOut();
-        }
+        "Trocar de instituição?"
     );
+
+    if (confirmed) {
+        localStorage.removeItem('selectedInstitutionId');
+        
+        try {
+            const { signOut } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
+            await signOut(auth);
+            window.location.href = "login.html";
+        } catch (error) {
+            console.error("Erro ao trocar instituição:", error);
+            showNotification(
+                "Falha ao desconectar. Tente novamente.",
+                "error",
+                "Erro",
+                0
+            );
+        }
+    }
 });
 
         for (const unitID in inst.units) {
