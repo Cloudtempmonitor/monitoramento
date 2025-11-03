@@ -2,7 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, where, orderBy, startAt, Timestamp, documentId } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-import { showNotification } from './utils/notifications.js';
+import { showNotification, showConfirmation } from './utils/notifications.js';
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -47,10 +47,15 @@ onAuthStateChanged(auth, (user) => {
     if (!user) {
         cleanupBeforeUnload();
         window.location.href = "login.html";
-        console.warn("Usuário não autenticado. Redirecionando para login."); 
+        console.warn("Usuário não autenticado. Redirecionando para login.");  
     } else {
-        console.log(`Usuário autenticado com sucesso: UID ${user.uid}`);  
-        showNotification("Login realizado com sucesso!", 'success', 'Bem-vindo', 3000);  
+        console.log(`Usuário autenticado com sucesso: UID ${user.uid}`); 
+         
+        const loginSucesso = sessionStorage.getItem('loginSucesso');
+        if (loginSucesso) {
+        showNotification("Login realizado com sucesso!", 'success', 'Bem-vindo', 3000); 
+        sessionStorage.removeItem('loginSucesso');
+        }
         loadUserData(user.uid); 
         if (statusCheckInterval) clearInterval(statusCheckInterval);
         statusCheckInterval = setInterval(checkAllDeviceStatus, 30000); 
@@ -87,7 +92,7 @@ if (logoutButton) {
     logoutButton.addEventListener("click", (e) => {
         e.preventDefault();
 
-        showCustomConfirm(
+        showConfirmation(
             "Sair da conta?",
             "Você será desconectado agora.",
             () => {
@@ -104,10 +109,6 @@ if (logoutButton) {
 } else {
     console.warn("Elemento #logout-button não encontrado.");
 }
-
-
-
-
             if (userLevel === 'superAdmin') {
                 console.warn("Usuário é superAdmin. Carregando TODOS os setores...");
                 const allSectorsSnapshot = await getDocs(collection(db, "setores"));
@@ -273,7 +274,7 @@ function renderFilterMenu(uiTree) {
         `;
         
        instContainer.querySelector('.change-inst-icon').addEventListener('click', () => {
-    showCustomConfirm(
+    showConfirmation(
         "Trocar de instituição?",
         "Você será redirecionado para a tela de login.",
         () => {
@@ -364,7 +365,6 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
         deviceCards[mac] = card; 
         card.addEventListener("click", () => openDatalogger(mac, allDevicesConfig[mac].nomeDispositivo));
         deviceStatus[mac] = 'OFFLINE';
-        // MODIFICADO: Inicializa o status do alarme com um objeto padrão
         deviceAlarmStatus[mac] = { ativo: false, tipo: 'Nenhum' };
         
         // Listener para dados do dispositivo
@@ -390,27 +390,20 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
        const alarmStatusRef = doc(db, "dispositivos", mac, "eventos", "estadoAlarmeAtual");
         alarmListeners[mac] = onSnapshot(alarmStatusRef, (docSnap) => {
             
-            
-            // Lendo o campo 'estadoAlarmeAtual' DENTRO do documento 'estadoAlarmeAtual'
             const alarmData = (docSnap.exists() && docSnap.data().estadoAlarmeAtual) 
                 ? docSnap.data().estadoAlarmeAtual 
                 : { ativo: false, tipo: "Nenhum" };
             
-            
-            deviceAlarmStatus[mac] = alarmData; // Armazena o objeto de alarme completo
+            deviceAlarmStatus[mac] = alarmData; 
             
             const isNowActive = alarmData.ativo === true;
             const wasActive = activeAlarms.has(mac);
 
-            // Atualiza notificações apenas se o dispositivo está ONLINE
             if (deviceStatus[mac] === 'ONLINE') {
-                // Se o alarme acabou de ficar ATIVO
                 if (isNowActive && !wasActive) {
                     const deviceConfig = allDevicesConfig[mac];
-                    // Verifica se o alarme é para um sensor habilitado pelo usuário
                     if (deviceConfig && hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData)) {
                         activeAlarms.add(mac);
-                        //Usa a função auxiliar para detalhar o alarme
                         const friendlyMessage = getFriendlyAlarmMessage(alarmData.tipo);
                         showNotification(
                             `Dispositivo "${deviceConfig.nomeDispositivo}" em alarme! (${friendlyMessage})`, 
@@ -418,12 +411,10 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
                             'Alerta de Alarme'
                         );
                     }
-                // Se o alarme acabou de ficar INATIVO
                 } else if (!isNowActive && wasActive) {
                     activeAlarms.delete(mac);
                 }
             } else if (!isNowActive) {
-                // Garante que alarmes sejam removidos se o dispositivo estiver offline e o alarme não estiver ativo
                 activeAlarms.delete(mac);
             }
             
@@ -443,9 +434,6 @@ function createOrUpdateDeviceCard(mac, deviceConfig) {
     return card;
 }
 
-/**
- *Converte o tipo de alarme em uma mensagem legível
- */
 function getFriendlyAlarmMessage(tipo) {
     if (!tipo) return "Tipo desconhecido";
     switch (tipo) {
@@ -457,14 +445,10 @@ function getFriendlyAlarmMessage(tipo) {
         case 'umidade_max': return "Umidade (Máxima)";
         case 'falha_sonda': return "Falha de Sonda";
         case 'Nenhum': return "Nenhum";
-        default: return tipo; // Retorna o tipo original se não for mapeado
+        default: return tipo;
     }
 }
 
-
-/**
- * Verifica se o alarme ativo tem sensores habilitados
- */
 function hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData) {
     if (!deviceConfig || !alarmData) return false;
     
@@ -495,7 +479,6 @@ function hasActiveAlarmWithEnabledSensors(deviceConfig, alarmData) {
             return alarmeFalhaSondaAtivo && isSondaAtiva;
             
         default:
-            // Para tipos desconhecidos ou múltiplos, considera ativo se algum sensor habilitado está em alarme
             return alarmeSondaAtivo || alarmeTempAmbienteAtivo || alarmeUmidadeAtivo || alarmeFalhaSondaAtivo;
     }
 }
@@ -585,19 +568,17 @@ function updateCardContent(cardElement, mac) {
             alarmeMaxDisplay = maxAlarm !== undefined ? `${maxAlarm}°C` : 'N/A';
 
             if (tempSonda !== undefined) {
-                if (tempSonda <= -100) { 
+                if (tempSonda <= -100) { // Falha (-100, -127, etc.)
                     mainValue = "N/A";
                 } 
-                else { // Leitura normal ou em alarme (apenas exibe o valor)
+                else { // Leitura normal ou em alarme 
                     mainValue = `${tempSonda.toFixed(1)}°C`;
                 }
             }
-       
+            // (tempSonda === undefined) -> mainValue continua "N/A"
             
        } else {
-            // MODO AMBIENTE
-            
-            // --- 1. Lógica da Temperatura Ambiente (Valor Principal) ---
+            //Lógica da Temperatura Ambiente (Valor Principal) ---
             const minAlarmAmb = deviceConfig.alarmeMin?.temperaturaAmbiente;
             const maxAlarmAmb = deviceConfig.alarmeMax?.temperaturaAmbiente;
             alarmeMinDisplay = minAlarmAmb !== undefined ? `${minAlarmAmb}°C` : 'N/A';
@@ -612,12 +593,12 @@ function updateCardContent(cardElement, mac) {
                 }
             }
             
-            // --- 2. Lógica da Umidade (Valor Secundário) ---
+            //Lógica da Umidade 
             const minAlarmUmid = deviceConfig.alarmeMin?.umidade;
             const maxAlarmUmid = deviceConfig.alarmeMax?.umidade;
 
             if (umidade !== undefined) {
-                if (umidade < 0) { // Falha (ESP32 envia -1.0)
+                if (umidade < 0) { 
                     humidityValue = "N/A";
                 }
                 else {
@@ -631,8 +612,9 @@ function updateCardContent(cardElement, mac) {
             const date = timestamp.toDate(); 
             timestampText = `Última leitura: ${date.toLocaleString("pt-BR")}`;
         }
+
     } else {
-        mainColor = "#95a5a6"; // Cor cinza para offline
+        mainColor = "#95a5a6"; 
         if (currentReading && currentReading.timestamp && typeof currentReading.timestamp.toDate === 'function') {
              const date = currentReading.timestamp.toDate(); 
              timestampText = `Última leitura: ${date.toLocaleString("pt-BR")}`;
@@ -686,6 +668,10 @@ function updateCardContent(cardElement, mac) {
 
 
 /**
+ * Funções de Alerta (Toast) REMOVIDAS
+ */
+
+/**
  * Abre o modal do Datalogger 
  */
 function openDatalogger(mac, deviceName) {
@@ -707,7 +693,7 @@ function openDatalogger(mac, deviceName) {
 }
 
 /**
- * Atualiza o gráfico (Corrigido para nova nomenclatura)
+ * Atualiza o gráfico 
  */
 async function updateChartData() {
     if (!currentDeviceMac) return;
@@ -716,7 +702,7 @@ async function updateChartData() {
     const timeFilterValue = timeFilterElement.value;
     const hours = parseInt(timeFilterValue);
 
-    // Calcula timestamps como no device_details.js
+    // Calcula timestamps 
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - (hours * 3600 * 1000));
     const startTimeStamp = Math.floor(startDate.getTime() / 1000);
@@ -758,7 +744,7 @@ function renderChartModal(readings, hours) {
         if (typeof reading.timestamp !== 'number') return; 
         const date = new Date(reading.timestamp * 1000); 
         
-        // Formata o label baseado no período (igual ao device_details.js)
+        // Formata o label baseado no período
         let labelFormat;
         if (hours <= 24) {
             labelFormat = date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
@@ -940,7 +926,7 @@ function detachAllFirebaseListeners() {
     for (const mac in deviceListeners) {
         delete deviceListeners[mac];
     }
-    //Garante que os listeners de alarme também sejam limpos
+    
     for (const mac in alarmListeners) {
         if (alarmListeners[mac]) {
             alarmListeners[mac]();
@@ -954,57 +940,3 @@ function openDeviceDetails(mac) {
 }
 
 window.addEventListener('beforeunload', cleanupBeforeUnload);
-
-
-
-/**
- * Modal de confirmação personalizado 
- */
-function showCustomConfirm(title, message, onConfirm) {
-    // Remove modal antigo se existir
-    const existing = document.getElementById('custom-confirm-modal');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'custom-confirm-modal';
-    modal.className = 'confirmation-modal';
-    modal.innerHTML = `
-        <div class="confirmation-content">
-            <h4>${title}</h4>
-            <p>${message}</p>
-            <div class="confirmation-buttons">
-                <button class="confirmation-btn ok">OK</button>
-                <button class="confirmation-btn cancel">Cancelar</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Mostra com animação
-    requestAnimationFrame(() => modal.classList.add('show'));
-
-    // Botões
-    modal.querySelector('.ok').onclick = () => {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.remove();
-            if (onConfirm) onConfirm();
-        }, 200);
-    };
-
-    modal.querySelector('.cancel').onclick = () => {
-        modal.classList.remove('show');
-        setTimeout(() => modal.remove(), 200);
-    };
-
-    // Fechar com ESC
-    const escHandler = (e) => {
-        if (e.key === 'Escape') {
-            modal.querySelector('.cancel').click();
-            document.removeEventListener('keydown', escHandler);
-        }
-    };
-    document.addEventListener('keydown', escHandler);
-
-}
