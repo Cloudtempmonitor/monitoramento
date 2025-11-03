@@ -10,7 +10,7 @@ import { getFirestore, collection, doc, getDoc, getDocs } from 'https://www.gsta
 import { initUsersModule, showUsuariosView } from './admin/admin-users.js';
 import { initDevicesModule, showDispositivosView } from './admin/admin-devices.js';
 import { initHierarchyModule, showInstituicoesView } from './admin/admin-hierarchy.js';
-import { showNotification } from '../utils/notifications.js';
+import { showNotification } from './utils/notifications.js';
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -146,3 +146,4 @@ async function loadHierarchyCache() {
         showNotification("Não foi possível carregar os dados de hierarquia. Tente recarregar a página.", "error");
     }
 }
+
