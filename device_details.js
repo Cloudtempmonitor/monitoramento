@@ -1,4 +1,4 @@
-// Importações (permanecem iguais)
+// Importações 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import {
   getAuth,
@@ -20,7 +20,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { showNotification } from "./utils/notifications.js";
 
-// Config do Firebase (permanece igual)
+// Config do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAawMA2HjEgBZ5gYIawMYECTp0oN4hj6YE",
   authDomain: "temptracker-eb582.firebaseapp.com",
@@ -37,7 +37,7 @@ const auth = getAuth(app);
 let currentMac = null;
 let currentChart = null;
 let currentReadings = [];
-let flatpickrInstance = null; // Instância do novo calendário
+let flatpickrInstance = null; 
 
 const OFFLINE_THRESHOLD_SECONDS = 120;
 const formatTime = (d) =>
@@ -57,12 +57,11 @@ onAuthStateChanged(auth, (user) => {
             window.location.href = "index.html";
         }
 
-        // ✅ INICIA OS LISTENERS EM TEMPO REAL
+        //INICIA OS LISTENERS EM TEMPO REAL
         listenToDeviceStatus(currentMac);
         listenToAlarmStatus(currentMac);
 
-        // ✅ INICIA OS FILTROS (Gráfico e Histórico)
-        // (Isso permanece igual ao seu código original)
+        //INICIA OS FILTROS (Gráfico e Histórico)
         initializeFilters();
     }
 });
@@ -81,17 +80,16 @@ function listenToDeviceStatus(mac) {
         const deviceNameEl = document.getElementById("device-name");
         
         const setorEl = document.getElementById("info-setor");
-        const unidadeEl = document.getElementById("info-unidade"); // ✅ LINHA ADICIONADA
+        const unidadeEl = document.getElementById("info-unidade"); 
         
         const configListEl = document.getElementById("info-config-list");
 
         if (snapshot.exists()) {
             const deviceData = snapshot.data();
 
-            // 1. ATUALIZA NOME E INFO CARD (PROPOSTA 1)
+            // ATUALIZA NOME E INFO CARD 
             deviceNameEl.textContent = deviceData.nomeDispositivo || "Dispositivo sem nome";
             
-            // ✅ LINHAS ATUALIZADAS
             // (Presume que o campo no Firestore se chama 'nomeUnidade')
             unidadeEl.textContent = deviceData.nomeUnidade || "Não definida"; 
             setorEl.textContent = deviceData.nomeSetor || "Não definido";
@@ -108,7 +106,7 @@ function listenToDeviceStatus(mac) {
                 
             `;
 
-            // 2. ATUALIZA ÚLTIMAS LEITURAS
+            // ATUALIZA ÚLTIMAS LEITURAS
             const lastReading = deviceData.ultimasLeituras || {};
             const sondaTemp = lastReading.temperatura;
             const ambTemp = lastReading.temperaturaAmbiente;
@@ -128,7 +126,7 @@ function listenToDeviceStatus(mac) {
                 lastUpdateEl.textContent = "Nenhuma leitura recente.";
             }
 
-            // 3. ATUALIZA STATUS ONLINE/OFFLINE (Sua lógica original, agora REATIVA)
+            // ATUALIZA STATUS ONLINE/OFFLINE 
             const statusTimestamp = deviceData.statusTimestamp;
             let status = "OFFLINE";
             if (statusTimestamp && typeof statusTimestamp.toMillis === "function") {
@@ -136,7 +134,7 @@ function listenToDeviceStatus(mac) {
                 const statusTimestampMillis = statusTimestamp.toMillis();
                 const differenceMillis = nowMillis - statusTimestampMillis;
                 
-                // OFFLINE_THRESHOLD_SECONDS (definida no topo do seu .js)
+                // OFFLINE_THRESHOLD_SECONDS 
                 if (differenceMillis <= OFFLINE_THRESHOLD_SECONDS * 1000) {
                     status = "ONLINE";
                 }
@@ -208,7 +206,6 @@ function listenToAlarmStatus(mac) {
         // Não faz nada em caso de erro, deixa o listener principal tratar
     });
 }
-// (loadUserData e loadDeviceDetails permanecem iguais)
 async function loadUserData(userId) {
   const userDocRef = doc(db, "usuarios", userId);
   const snapshot = await getDoc(userDocRef);
@@ -220,10 +217,10 @@ async function loadUserData(userId) {
 }
 
 /**
- * NOVO: Inicializa o flatpickr e os listeners de filtro
+ * Inicializa o flatpickr e os listeners de filtro
  */
 function initializeFilters() {
-  // 1. Configura o calendário (flatpickr)
+  // Configura o calendário (flatpickr)
   flatpickrInstance = flatpickr("#date-range-picker", {
     mode: "range", // Ativa o modo de período
     enableTime: true, // Permite selecionar hora e minuto
@@ -250,7 +247,7 @@ function initializeFilters() {
     setPickerToPreset(e.target.value);
   });
 
-  // 4. Define o período inicial (07 horas) no calendário
+  // 4. Define o período inicial no calendário
   setPickerToPreset("12");
 
   // 5. Carrega os dados iniciais (das últimas 12h)
@@ -258,7 +255,7 @@ function initializeFilters() {
 }
 
 /**
- * NOVO: Atualiza o calendário flatpickr com base no dropdown
+ *Atualiza o calendário flatpickr com base no dropdown
  */
 function setPickerToPreset(hoursValue) {
   if (hoursValue === "custom" || !flatpickrInstance) return;
@@ -273,7 +270,6 @@ function setPickerToPreset(hoursValue) {
 
 /**
  * (Controlador) Lê o período do flatpickr e chama o fetchData.
- * (MODIFICADA)
  */
 async function updateChartData() {
   if (!currentMac || !flatpickrInstance) return;
@@ -342,7 +338,6 @@ async function updateChartData() {
 
 /**
  * (Fetcher) Busca os dados no Firestore e delega a renderização.
- * (Sem alterações)
  */
 async function fetchData(startTimeStamp, endTimeStamp) {
   console.log(
@@ -375,7 +370,7 @@ async function fetchData(startTimeStamp, endTimeStamp) {
     const deviceSnap = await getDoc(doc(db, "dispositivos", currentMac));
     const deviceConfig = deviceSnap.exists() ? deviceSnap.data() : {};
 
-    // NOVO: Passa os eventos de alarme em vez de detectar das leituras
+    // Passa os eventos de alarme em vez de detectar das leituras
     renderAlarmHistory(alarmEvents, deviceConfig);
     renderStats(currentReadings, deviceConfig);
   } catch (error) {
@@ -385,7 +380,6 @@ async function fetchData(startTimeStamp, endTimeStamp) {
   }
 }
 
-// (renderChart, renderAlarmHistory, renderStats permanecem iguais)
 function renderChart(readings) {
   const labels = [];
   const temperatures = [];
@@ -455,7 +449,7 @@ function renderAlarmHistory(alarmEvents, deviceConfig = {}) {
     return;
   }
 
-  // Renderiza cada evento (já não precisa da lógica complexa de detecção)
+  // Renderiza cada evento
   alarmEvents.forEach((event) => {
     const li = document.createElement("li");
 
@@ -531,7 +525,7 @@ function renderAlarmHistory(alarmEvents, deviceConfig = {}) {
   });
 }
 
-// === FUNÇÃO DE FORMATAÇÃO (mantida) ===
+// === FUNÇÃO DE FORMATAÇÃO  ===
 function formatValue(val, key, unit, config) {
   if (val === null || val === undefined) return "";
   const min = config?.alarmeMin?.[key];
@@ -556,7 +550,7 @@ function formatValue(val, key, unit, config) {
     ? ` <span class="alarm-limit" style="font-size:0.9em; color:#7f8c8d;">${limitStr}</span>`
     : "";
 
-  // Retorna a string SOMENTE se for um erro, como no seu original
+  // Retorna a string SOMENTE se for um erro
   return isError ? valueStr + limitHtml : "";
 }
 
@@ -603,7 +597,7 @@ function formatModalTriggerValue(reading, key, label, unit, config) {
     `;
 }
 /**
- * NOVO: Formata a linha de "Leitura do Disparo"
+ *Formata a linha de "Leitura do Disparo"
  */
 function formatModalTrigger(key, value, unit, label, config) {
   if (value === null || value === undefined) return "";
@@ -623,7 +617,6 @@ function formatModalTrigger(key, value, unit, label, config) {
 
   if (!isError) return ""; // Só retorna a string se foi este que disparou
 
-  // Pedido: Ser específico (Sonda, Ambiente...)
   return `
         <div class="trigger-item">
             <strong>${label}:</strong> 
@@ -633,7 +626,7 @@ function formatModalTrigger(key, value, unit, label, config) {
 }
 
 /**
- * NOVO: Encontra o pico (Min/Max) durante o período de alarme
+ * Encontra o pico (Min/Max) durante o período de alarme
  */
 function findAlarmPeak(alarmReadings, config) {
   if (!alarmReadings || alarmReadings.length === 0)
@@ -646,7 +639,7 @@ function findAlarmPeak(alarmReadings, config) {
   // 1. Descobre qual foi o gatilho inicial
   const keys = ["sonda", "temperaturaAmbiente", "umidade"];
   for (const key of keys) {
-    if (triggerKey) break; // Já achamos
+    if (triggerKey) break; 
     const val = startReading[key];
     if (val === null || val === undefined) continue;
 
@@ -662,7 +655,7 @@ function findAlarmPeak(alarmReadings, config) {
     }
   }
 
-  if (!triggerKey) return { peakHtml: "", triggerKey: null }; // Não achou gatilho
+  if (!triggerKey) return { peakHtml: "", triggerKey: null }; 
 
   // 2. Encontra o valor PICO (Min ou Max) de todas as leituras DO ALARME
   let peakValue = startReading[triggerKey];
@@ -684,7 +677,7 @@ function findAlarmPeak(alarmReadings, config) {
   };
   const units = { sonda: "°C", temperaturaAmbiente: "°C", umidade: "%" };
 
-  // Pedido: Exibir o pico (Mínimo ou Máximo)
+  // Exibir o pico (Mínimo ou Máximo)
   const peakLabel = triggerType === "min" ? "Leitura Mínima" : "Leitura Máxima";
 
   const peakHtml = `
@@ -699,7 +692,7 @@ function findAlarmPeak(alarmReadings, config) {
 }
 
 /**
- * REESCRITO: Renderiza as estatísticas como cartões
+ *Renderiza as estatísticas como cartões
  * e compara com os limites do deviceConfig.
  */
 function renderStats(readings, deviceConfig) {
@@ -715,7 +708,7 @@ function renderStats(readings, deviceConfig) {
             .map((r) => r[readingKey])
             .filter((v) => v !== null && v !== undefined && typeof v === "number");
 
-        // Pega os limites do firmware [cite: 21, 23, 207, 209, 211, 213, 215, 217]
+        // Pega os limites do firmware 
         const minLimit = deviceConfig?.alarmeMin?.[configKey];
         const maxLimit = deviceConfig?.alarmeMax?.[configKey];
         let hasError = false;
@@ -795,11 +788,11 @@ function renderStats(readings, deviceConfig) {
     `;
 }
 
-// (export-csv, menu-toggle, showLoading, createLoader permanecem iguais)
+// export-csv, menu-toggle, showLoading, createLoader
 document.getElementById("export-csv").addEventListener("click", () => {
   if (currentReadings.length === 0)
     return showNotification("Nenhum dado para exportar.", "info");
-  let csv = "Timestamp,Sonda,TemperaturaAmbiente,Umidade,Alarme\n";
+  let csv = "Data,Hora,Sonda,TemperaturaAmbiente,Umidade,Alarme\n";
   currentReadings.forEach((r) => {
     const dateStr = new Date(r.timestamp * 1000).toLocaleString("pt-BR");
     csv += `${dateStr},${r.temperatura ?? "N/A"},${
@@ -878,7 +871,6 @@ function formatDisparoLine(sensor, config, peaks, triggerKey) {
   const max = config.alarmeMax?.[key];
   const peak = peaks[key];
 
-  // Só mostra se houver alarme (ou pico)
   const inAlarm =
     (min !== undefined && value < min) || (max !== undefined && value > max);
   if (!inAlarm && !peak) return "";
@@ -919,15 +911,12 @@ function formatDisparoLine(sensor, config, peaks, triggerKey) {
 }
 
 // =======================================================
-// === FUNÇÕES DO MODAL (REESCRITAS) ===
+//  FUNÇÕES DO MODAL
 // =======================================================
 let modalChart = null; // Instância do gráfico do modal
 
 /**
- * REESCRITO: Abre o modal e preenche com dados e gráfico
- */
-/**
- * REESCRITO: Abre o modal e preenche com dados e gráfico
+ * Abre o modal e preenche com dados e gráfico
  */
 async function openAlarmGraph(alarmEvent, deviceConfig) {
     console.log("🔧 Abrindo modal para evento:", alarmEvent.id);
@@ -938,7 +927,7 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
         return;
     }
 
-    // ✅ LIMPAR CONTEÚDO ANTERIOR
+    // LIMPAR CONTEÚDO ANTERIOR
     document.getElementById("modal-device-name").textContent = "";
     document.getElementById("modal-device-mac").textContent = "";
     document.getElementById("modal-alarm-start").textContent = "";
@@ -947,20 +936,20 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
     document.getElementById("modal-alarm-trigger").innerHTML = "";
     document.getElementById("modal-event-details").innerHTML = "";
 
-    // ✅ LIMPAR CANVAS DO GRÁFICO
+    // LIMPAR CANVAS DO GRÁFICO
     const canvas = document.getElementById("modal-chart");
     if (canvas) {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // ✅ DESTRUIR GRÁFICO ANTERIOR
+    //  DESTRUIR GRÁFICO ANTERIOR
     if (window.modalChart) {
         window.modalChart.destroy();
         window.modalChart = null;
     }
 
-    // --- 1. CABEÇALHO DO EVENTO ---
+    //  CABEÇALHO DO EVENTO ---
     document.getElementById("modal-device-name").textContent =
         deviceConfig.nomeDispositivo || "Dispositivo";
     document.getElementById("modal-device-mac").textContent = currentMac;
@@ -982,7 +971,7 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
         : "Em andamento";
     document.getElementById("modal-alarm-duration").textContent = duration;
 
-    // --- 2. SEÇÃO: PICOS DO EVENTO (Min/Max) ---
+    //  SEÇÃO: PICOS DO EVENTO (Min/Max) ---
     
     // Busca as leituras *exatas* do período (sem buffer)
     const alarmPeriodReadings = await getAlarmPeriodReadings(alarmEvent);
@@ -1001,7 +990,8 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
     `;
     // Injeta o novo HTML no mesmo local
     document.getElementById("modal-alarm-trigger").innerHTML = peaksHtml;
-    // --- 3. SEÇÃO: DETALHES DO EVENTO (Novos Campos) ---
+    
+    // --- SEÇÃO: DETALHES DO EVENTO 
     const detailsHtml = `
         <div class="details-section">
             <h4 style="margin:20px 0 12px; color:#2c3e50; border-bottom:2px solid #e67e22; padding-bottom:4px;">
@@ -1012,11 +1002,10 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
     `;
     document.getElementById("modal-event-details").innerHTML = detailsHtml;
 
-    // --- 4. GRÁFICO DO EVENTO ---
-    // ✅ CHAMAR A NOVA FUNÇÃO ESPECÍFICA DO MODAL
+    // GRÁFICO DO EVENTO ---
     await renderModalChart(alarmEvent, deviceConfig);
 
-    // ✅ MOSTRAR MODAL APÓS CARREGAR TUDO
+    // MOSTRAR MODAL APÓS CARREGAR TUDO
     modal.style.display = "flex";
     setTimeout(() => {
         modal.classList.add("show");
@@ -1026,8 +1015,7 @@ async function openAlarmGraph(alarmEvent, deviceConfig) {
 }
 
 /**
- * ✅ FUNÇÃO ESPECÍFICA PARA O GRÁFICO DO MODAL
- * (Não conflita com renderChart do gráfico principal)
+ *  FUNÇÃO ESPECÍFICA PARA O GRÁFICO DO MODAL
  */
 async function renderModalChart(alarmEvent, deviceConfig) {
     console.log("🔧 Renderizando gráfico do modal para evento:", alarmEvent.id);
@@ -1038,14 +1026,14 @@ async function renderModalChart(alarmEvent, deviceConfig) {
         return;
     }
 
-    // ✅ DESTRUIR GRÁFICO ANTERIOR DO MODAL
+    // DESTRUIR GRÁFICO ANTERIOR DO MODAL
     if (window.modalChart) {
         window.modalChart.destroy();
         window.modalChart = null;
     }
 
     try {
-        // ✅ BUSCAR LEITURAS COM BUFFER DE 30min ANTES/DEPOIS
+        // BUSCAR LEITURAS COM BUFFER DE 30min ANTES/DEPOIS
         const buffer = 30 * 60; // 30 minutos em segundos
         const startTimeWithBuffer = alarmEvent.startTimestamp - buffer;
         const endTimeWithBuffer = (alarmEvent.endTimestamp || Math.floor(Date.now() / 1000)) + buffer;
@@ -1175,7 +1163,7 @@ async function renderModalChart(alarmEvent, deviceConfig) {
         context.fillText('Erro ao carregar gráfico: ' + error.message, 10, 50);
     }
 }
-// NOVA FUNÇÃO: Busca leituras do período específico do alarme
+// Busca leituras do período específico do alarme
 async function getAlarmPeriodReadings(alarmEvent) {
   try {
     const startTimeStamp = alarmEvent.startTimestamp;
@@ -1214,7 +1202,6 @@ function closeModal() {
   }, 300);
 }
 
-// (Bloco NOVO)
 // --- LISTENERS DO MODAL (Fechamento e Exportação) ---
 document.getElementById("close-modal").addEventListener("click", closeModal);
 document.getElementById("alarm-graph-modal").addEventListener("click", (e) => {
@@ -1240,7 +1227,6 @@ document.getElementById("export-png-btn").addEventListener("click", () => {
     .textContent.trim()
     .replace(/:/g, "-")
     .replace(/\//g, "-");
-  // Muda a extensão para .jpg
   const fileName = `Alarme_${deviceName}_${startTime}.jpg`;
 
   showNotification(
@@ -1250,13 +1236,12 @@ document.getElementById("export-png-btn").addEventListener("click", () => {
 
   // Usa a biblioteca html2canvas para "printar" o modal
   html2canvas(modalContent, {
-    scale: 1.5, // Aumenta a resolução da imagem
-    useCORS: true, // Permite que o gráfico seja renderizado
-    backgroundColor: "#ffffff", // Força o fundo branco (para JPG)
+    scale: 1.5, 
+    useCORS: true,
+    backgroundColor: "#ffffff", 
   })
     .then((canvas) => {
-      // Converte o canvas resultante para JPG
-      const imgData = canvas.toDataURL("image/jpeg", 0.9); // 0.9 = 90% qualidade
+      const imgData = canvas.toDataURL("image/jpeg", 0.9); 
 
       const a = document.createElement("a");
       a.href = imgData;
@@ -1357,17 +1342,27 @@ function formatTriggerReadings(startReading, triggeredBy, config) {
  * Formata os detalhes do evento de forma compacta
  */
 function formatEventDetails(alarmEvent, config) {
+    // Obter os objetos de limites e leituras 
     const startLimites = alarmEvent.limitesIniciais || {};
     const endLimites = alarmEvent.limitesFinais || {};
     const endReading = alarmEvent.endReading || {};
-    const motivo = alarmEvent.motivoEncerramento || 'leituras_normalizadas';
 
-    // ✅ VERIFICAR SE LIMITES REALMENTE FORAM ALTERADOS
+    // Verificar se os limites mudaram 
     const limitesAlterados = verificarMudancasLimites(startLimites, endLimites);
 
+    // Lógica dinâmica para definir o motivo 
+    let motivoDisplay = '✅ Leituras normalizadas';
+    let motivoCor = '#27ae60'; // Verde
+    
+    // Se a função de verificação detetou mudanças, força o motivo
+    if (limitesAlterados.temMudancas) {
+        motivoDisplay = '⚙️ Limites ajustados';
+        motivoCor = '#e67e22'; 
+    }
+
+    // 4. Retornar o HTML 
     return `
         <div style="font-size:0.9em; line-height:1.3;">
-            <!-- Tipo e Status em linha -->
             <div style="display:flex; justify-content:space-between; margin:8px 0;">
                 <div>
                     <strong>🔔 Tipo:</strong> 
@@ -1379,24 +1374,20 @@ function formatEventDetails(alarmEvent, config) {
                 </div>
             </div>
 
-            <!-- Motivo do Encerramento (apenas se resolvido) -->
             ${alarmEvent.status === 'resolvido' ? `
                 <div style="margin:6px 0; padding:6px; background:#e8f5e8; border-radius:4px;">
                     <strong>🎯 Motivo:</strong> 
-                    <span style="color:#27ae60;">
-                        ${motivo === 'leituras_normalizadas' ? '✅ Leituras normalizadas' : 
-                          motivo === 'ajuste_limites_administrativo' ? '⚙️ Ajuste administrativo' : motivo}
+                    <span style="color:${motivoCor};">
+                        ${motivoDisplay} 
                     </span>
                 </div>
             ` : ''}
 
-            <!-- ✅ LIMITES COMPACTOS - TABELA SIMPLES -->
             <div style="margin:10px 0;">
                 <strong>📏 Limites Vigentes:</strong>
                 ${formatLimitesCompactos(startLimites)}
             </div>
 
-            <!-- ✅ LIMITES ALTERADOS - SÓ SE HOUVER MUDANÇAS REAIS -->
             ${limitesAlterados.temMudancas ? `
                 <div style="margin:8px 0; padding:6px; background:#fff3cd; border-radius:4px;">
                     <strong>🔄 Limites Alterados:</strong>
@@ -1404,7 +1395,6 @@ function formatEventDetails(alarmEvent, config) {
                 </div>
             ` : ''}
 
-            <!-- ✅ LEITURAS FINAIS COMPACTAS -->
             ${alarmEvent.status === 'resolvido' ? `
                 <div style="margin:8px 0; padding:6px; background:#e8f4fd; border-radius:4px;">
                     <strong>📉 Leituras Finais:</strong>
