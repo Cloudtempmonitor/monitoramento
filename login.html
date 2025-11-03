@@ -8,12 +8,11 @@
   <link rel="stylesheet" href="estilo.css">
 
   <script type="module">
-    // Importações do Firebase Auth e Firestore
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getFirestore, collection, doc, getDoc, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
-    // Importa a função de notificação
+    
     import { showNotification } from './utils/notifications.js';
 
     // Configuração do Firebase
@@ -32,6 +31,7 @@
 
     const loginBtn = document.getElementById("login-btn");
 
+
     function login() {
       const email = document.getElementById("email").value;
       const senha = document.getElementById("senha").value;
@@ -42,10 +42,10 @@
       signInWithEmailAndPassword(auth, email, senha)
         .then((userCredential) => {
           handleLoginSuccess(userCredential.user);
+
         })
         .catch((error) => {
           console.error("Erro no login:", error.message);
-          // Usa a função importada
           showNotification("Email ou senha incorretos.", 'error', 'Falha no Login', 3000); 
           loginBtn.disabled = false;
         });
@@ -65,10 +65,10 @@
         const allowedInstIds = userData.acessoInstituicoes || [];
 
         fetchInstitutions(userLevel, allowedInstIds);
-
+        sessionStorage.setItem('loginSucesso', 'true');
+        window.location.href = "index.html";
       } catch (error) {
         console.error("Erro ao buscar dados do usuário:", error);
-        // Usa a função importada
         showNotification(error.message, 'error');
         loginBtn.textContent = "Entrar";
         loginBtn.disabled = false;
@@ -117,6 +117,7 @@
 
     function selectInstitution(instId) {
       if (!instId) {
+          // Usa a função importada
           showNotification("Por favor, selecione uma instituição.", 'info');
           return;
       }
@@ -153,7 +154,6 @@
         selectInstitution(selectedId);
     };
     
-    // Adiciona a classe ao body para o CSS funcionar
     document.body.classList.add('login-body');
 
   </script>
@@ -178,5 +178,4 @@
   </div>
 
 </body>
-
 </html>
