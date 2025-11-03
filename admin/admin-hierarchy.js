@@ -5,7 +5,7 @@
 // Importações do Firebase 
 import { collection, doc, setDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-import { showNotification } from 'utils/notifications.js';
+import { showNotification } from '../utils/notifications.js';
 
 let db, currentUserLevel, currentUserInstitutions, hierarchyCache, loadHierarchyCache;
 
@@ -334,6 +334,7 @@ async function deleteHierarchyDoc(type, docId) {
         showNotification(`Erro ao excluir: ${error.message}`, 'error', 'Erro');
     }
 }
+
 
 
 
