@@ -17,7 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Importa o sistema global de notificações
-import { showNotification, showConfirmation } from "./utils/notifications.js";
+import { showNotification, showConfirmation } from "/utils/notifications.js";
 
 // Dependências globais (injeção feita pelo admin.js)
 let db, currentUserLevel, currentUserInstitutions, hierarchyCache;
@@ -423,4 +423,5 @@ async function deleteDevice(deviceId) {
     showNotification(`Erro ao excluir: ${error.message}`, "error");
   }
 }
+
 
