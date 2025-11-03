@@ -1,5 +1,5 @@
 // =========================================
-// ADMIN.JS (O CONTROLADOR PRINCIPAL)
+// ADMIN.JS 
 // =========================================
 
 // Importações do Firebase
@@ -7,11 +7,9 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebas
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-// Importações dos NOSSOS MÓDULOS
 import { initUsersModule, showUsuariosView } from './admin/admin-users.js';
 import { initDevicesModule, showDispositivosView } from './admin/admin-devices.js';
 import { initHierarchyModule, showInstituicoesView } from './admin/admin-hierarchy.js';
-// NOVO: Importa a função de notificação
 import { showNotification } from '../utils/notifications.js';
 
 // Configuração do Firebase
@@ -34,7 +32,7 @@ let currentUserLevel = null;
 let currentUserInstitutions = [];
 let loggedInUserId = null; 
 
-// --- Cache de Hierarquia (compartilhado) ---
+// --- Cache de Hierarquia ---
 const hierarchyCache = {
     instituicoes: [],
     unidades: [],
@@ -46,7 +44,7 @@ const userNameEl = document.getElementById('user-name');
 const userLevelEl = document.getElementById('user-level');
 
 // =========================================
-// 1. BARREIRA DE SEGURANÇA (AUTH GUARD)
+// BARREIRA DE SEGURANÇA (AUTH GUARD)
 // =========================================
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -87,15 +85,8 @@ onAuthStateChanged(auth, async (user) => {
     initializeAdminPanel();
 });
 
-
 // =========================================
-// 2. SISTEMA DE NOTIFICAÇÃO GLOBAL
-//    (Função REMOVIDA daqui e movida para utils/notifications.js)
-// =========================================
-
-
-// =========================================
-// 3. INICIALIZAÇÃO DO APP E MÓDULOS
+// INICIALIZAÇÃO DO APP E MÓDULOS
 // =========================================
 function initializeAdminPanel() {
     const navButtons = document.querySelectorAll('.admin-nav-btn');
@@ -115,7 +106,7 @@ function initializeAdminPanel() {
         currentUserId: loggedInUserId, 
         hierarchyCache: hierarchyCache,
         loadHierarchyCache: loadHierarchyCache, 
-        showNotification: showNotification // <-- PASSA A FUNÇÃO IMPORTADA
+        showNotification: showNotification 
     };
     
     initUsersModule(dependencies);
@@ -152,7 +143,6 @@ async function loadHierarchyCache() {
          console.log(hierarchyCache); 
     } catch (error) {
         console.error("Erro ao carregar cache de hierarquia:", error);
-        // Usa a nova função de notificação!
         showNotification("Não foi possível carregar os dados de hierarquia. Tente recarregar a página.", "error");
     }
 }
