@@ -1388,7 +1388,7 @@ function formatEventDetails(alarmEvent, config) {
                 ${formatLimitesCompactos(startLimites)}
             </div>
 
-            ${limitesAlterados.temMudancas ? `
+             ${(limitesAlterados.temMudancas && alarmEvent.status === 'resolvido') ? `
                 <div style="margin:8px 0; padding:6px; background:#fff3cd; border-radius:4px;">
                     <strong>🔄 Limites Alterados:</strong>
                     ${formatMudancasCompactas(limitesAlterados.mudancas)}
@@ -1647,3 +1647,4 @@ function verificarMudancasLimites(inicio, fim) {
         mudancas: mudancas
     };
 }
+
